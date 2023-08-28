@@ -44,6 +44,8 @@ type Client struct {
 
 	// actions
 	actions map[string]func(c *Client, data interface{})
+
+	Log bool
 }
 
 func NewClient(s *manager, c *websocket.Conn) *Client {
@@ -52,6 +54,7 @@ func NewClient(s *manager, c *websocket.Conn) *Client {
 		conn:    c,
 		send:    make(chan []byte),
 		actions: make(map[string]func(c *Client, data interface{})),
+		Log:     false,
 	}
 
 	client.manager.register <- client
@@ -81,11 +84,19 @@ func (c *Client) read() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
+		if c.Log {
+			log.Println("new message", message)
+		}
+
 		data := new(Message)
-		if err := json.Unmarshal(message, data); err != nil {
-			if action, ok := c.actions[data.Action]; ok {
-				action(c, data.Data)
-			}
+		err = json.Unmarshal(message, data)
+		if err != nil && c.Log {
+			log.Println("new message", message)
+			return
+		}
+
+		if action, ok := c.actions[data.Action]; ok {
+			action(c, data.Data)
 		}
 	}
 }
