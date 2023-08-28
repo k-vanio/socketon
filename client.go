@@ -1,4 +1,4 @@
-package websocket
+package socketon
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ var Upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type client struct {
+type Client struct {
 	manager *manager
 
 	// The websocket connection.
@@ -43,15 +43,15 @@ type client struct {
 	send chan []byte
 
 	// actions
-	actions map[string]func(c *client, data interface{})
+	actions map[string]func(c *Client, data interface{})
 }
 
-func NewClient(s *manager, c *websocket.Conn) *client {
-	client := &client{
+func NewClient(s *manager, c *websocket.Conn) *Client {
+	client := &Client{
 		manager: s,
 		conn:    c,
 		send:    make(chan []byte),
-		actions: make(map[string]func(c *client, data interface{})),
+		actions: make(map[string]func(c *Client, data interface{})),
 	}
 
 	client.manager.register <- client
@@ -61,7 +61,7 @@ func NewClient(s *manager, c *websocket.Conn) *client {
 	return client
 }
 
-func (c *client) read() {
+func (c *Client) read() {
 	defer func() {
 		c.manager.unregister <- c
 		c.conn.Close()
@@ -90,7 +90,7 @@ func (c *client) read() {
 	}
 }
 
-func (c *client) writer() {
+func (c *Client) writer() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -125,11 +125,11 @@ func (c *client) writer() {
 	}
 }
 
-func (c *client) On(name string, action func(c *client, data interface{})) {
+func (c *Client) On(name string, action func(c *Client, data interface{})) {
 	c.actions[name] = action
 }
 
-func (c *client) Emit(to *client, data Message) {
+func (c *Client) Emit(to *Client, data Message) {
 	if _, ok := c.manager.clients[to]; ok {
 		dataSend, err := json.Marshal(data)
 		if err == nil {
@@ -138,7 +138,7 @@ func (c *client) Emit(to *client, data Message) {
 	}
 }
 
-func (c *client) Broadcast(data Message) {
+func (c *Client) Broadcast(data Message) {
 	dataSend, err := json.Marshal(data)
 	if err == nil {
 		for to := range c.manager.clients {
