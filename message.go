@@ -1,4 +1,4 @@
-package websocket
+package socketon
 
 type Message struct {
 	Action string      `json:"e"`

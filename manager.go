@@ -1,16 +1,16 @@
-package websocket
+package socketon
 
 type manager struct {
 	broadcast chan []byte
 
 	// Registered clients.
-	clients map[*client]bool
+	clients map[*Client]bool
 
 	// Register requests from the clients.
-	register chan *client
+	register chan *Client
 
 	// Unregister requests from clients.
-	unregister chan *client
+	unregister chan *Client
 
 	stop chan bool
 }
@@ -18,9 +18,9 @@ type manager struct {
 func NewManager() *manager {
 	return &manager{
 		broadcast:  make(chan []byte),
-		clients:    make(map[*client]bool),
-		register:   make(chan *client),
-		unregister: make(chan *client),
+		clients:    make(map[*Client]bool),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
 		stop:       make(chan bool),
 	}
 }
