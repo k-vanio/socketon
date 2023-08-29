@@ -14,6 +14,9 @@ func TestNewClient(t *testing.T) {
 	manager := NewManager()
 	go manager.Start()
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Upgrader.CheckOrigin = func(r *http.Request) bool {
+			return true
+		}
 		conn, err := Upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			panic(err)

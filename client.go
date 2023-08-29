@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Constants for managing WebSocket communication.
 const (
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
@@ -23,31 +24,28 @@ const (
 	maxMessageSize = 512
 )
 
+// Common byte slices.
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
 )
 
+// Upgrader is a WebSocket upgrader with specified buffer sizes.
 var Upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
+// Client represents a WebSocket client.
 type Client struct {
-	manager *manager
-
-	// The websocket connection.
-	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
-	send chan []byte
-
-	// actions
-	actions map[string]func(c *Client, data interface{})
-
-	Log bool
+	manager *manager                                     // Reference to the manager.
+	conn    *websocket.Conn                              // The WebSocket connection.
+	send    chan []byte                                  // Buffered channel for outbound messages.
+	actions map[string]func(c *Client, data interface{}) // Map of registered actions.
+	Log     bool                                         // Indicates whether logging is enabled for this client.
 }
 
+// NewClient creates a new Client instance and starts reading and writing goroutines.
 func NewClient(s *manager, c *websocket.Conn) *Client {
 	client := &Client{
 		manager: s,
@@ -64,6 +62,7 @@ func NewClient(s *manager, c *websocket.Conn) *Client {
 	return client
 }
 
+// read reads incoming messages from the WebSocket connection.
 func (c *Client) read() {
 	defer func() {
 		c.manager.unregister <- c
@@ -101,6 +100,7 @@ func (c *Client) read() {
 	}
 }
 
+// writer handles outgoing messages to the WebSocket connection.
 func (c *Client) writer() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -136,11 +136,13 @@ func (c *Client) writer() {
 	}
 }
 
+// On registers an action with a given name and corresponding function.
 func (c *Client) On(name string, action func(c *Client, data interface{})) {
 	c.actions[name] = action
 }
 
-func (c *Client) Emit(to *Client, data Message) {
+// Emit sends a message to a specific client.
+func (c *Client) Emit(to *Client, data *Message) {
 	if _, ok := c.manager.clients[to]; ok {
 		dataSend, err := json.Marshal(data)
 		if err == nil {
@@ -149,7 +151,8 @@ func (c *Client) Emit(to *Client, data Message) {
 	}
 }
 
-func (c *Client) Broadcast(data Message) {
+// Broadcast sends a message to all connected clients except the sender.
+func (c *Client) Broadcast(data *Message) {
 	dataSend, err := json.Marshal(data)
 	if err == nil {
 		for to := range c.manager.clients {

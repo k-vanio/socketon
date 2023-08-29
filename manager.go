@@ -1,20 +1,15 @@
 package socketon
 
+// manager is responsible for managing client connections and broadcasting messages.
 type manager struct {
-	broadcast chan []byte
-
-	// Registered clients.
-	clients map[*Client]bool
-
-	// Register requests from the clients.
-	register chan *Client
-
-	// Unregister requests from clients.
-	unregister chan *Client
-
-	stop chan bool
+	broadcast  chan []byte      // A channel for broadcasting messages to all clients.
+	clients    map[*Client]bool // A map of registered clients.
+	register   chan *Client     // A channel for registering clients.
+	unregister chan *Client     // A channel for unregister clients.
+	stop       chan bool        // A channel to stop the manager's operation.
 }
 
+// NewManager creates and returns a new instance of the manager.
 func NewManager() *manager {
 	return &manager{
 		broadcast:  make(chan []byte),
@@ -25,6 +20,7 @@ func NewManager() *manager {
 	}
 }
 
+// Start starts the manager's main loop for handling client registration, unregister, and broadcasting.
 func (m *manager) Start() {
 	defer close(m.stop)
 
@@ -41,10 +37,10 @@ end:
 		case <-m.stop:
 			break end
 		}
-
 	}
 }
 
+// Stop stops the manager's operation and closes its channels.
 func (m *manager) Stop() {
 	m.stop <- true
 }
